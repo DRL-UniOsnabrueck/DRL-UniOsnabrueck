@@ -1,26 +1,38 @@
 import numpy as np
+from enum import Enum
+
+
+class Actions(Enum):
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
+
 
 class GridWorld:
     def __init__(self, cols, rows):
         self.cols = cols
         self.rows = rows
-        self.moves = ['up', 'down', 'left', 'right']
+        self.actions = list(Actions)
         self.state = (0, 0)
         self.goal_state = (self.rows - 1, self.cols - 1)
         self.reward = 0
         self.wall = self.create_random_wall(1)
-        self.ice = self.create_ice(1)
+        self.ice = self.create_random_ice(1)
+        self.policy = [0.25, 0.25, 0.25, 0.25]
         self.evaluate()
 
     def create_random_wall(self, length):
         wall = []
-        for i in range(length):
+        while len(wall) < length:
             x = np.random.randint(0, self.cols)
             y = np.random.randint(0, self.rows)
+            if (x, y) == self.goal_state:
+                continue
             wall.append((x, y))
         return wall
 
-    def create_ice(self, length):
+    def create_random_ice(self, length):
         ice = []
         for i in range(length):
             x = np.random.randint(0, self.cols)
@@ -28,62 +40,32 @@ class GridWorld:
             ice.append((x, y))
         return ice
 
-    def choosing_an_action(self):
-        i = np.random.choice([0, 1, 2, 3], p=[0.25, 0.25, 0.25, 0.25])
-        return self.moves[i]
+    def pick_action(self):
+        return np.random.choice(list(Actions), p=self.policy)
 
     def up(self):
-        next_state = (self.state[0] - 1, self.state[1])
         if self.state[0] == 0:
             return self.state
-        elif next_state in self.wall:
-            return self.state
-        elif next_state in self.ice:
-            self.reward -= 2
-            return next_state
         else:
-            self.reward -= 1
-            return next_state
-
+            return self.state[0] - 1, self.state[1]
 
     def down(self):
-        next_state = (self.state[0] + 1, self.state[1])
         if self.state[0] == self.rows - 1:
             return self.state
-        elif next_state in self.wall:
-            return self.state
-        elif next_state in self.ice:
-            self.reward -= 2
-            return next_state
         else:
-            self.reward -= 1
-            return next_state
+            return self.state[0] + 1, self.state[1]
 
     def left(self):
-        next_state = (self.state[0], self.state[1] - 1)
         if self.state[1] == 0:
             return self.state
-        elif next_state in self.wall:
-            return self.state
-        elif next_state in self.ice:
-            self.reward -= 2
-            return next_state
         else:
-            self.reward -= 1
-            return next_state
-        
+            return self.state[0], self.state[1] - 1
+
     def right(self):
-        next_state = (self.state[0], self.state[1] + 1)
         if self.state[1] == self.cols - 1:
             return self.state
-        elif next_state in self.wall:
-            return self.state
-        elif next_state in self.ice:
-            self.reward -= 2
-            return next_state
         else:
-            self.reward -= 1
-            return next_state
+            return self.state[0], self.state[1] + 1
 
     def is_final_state(self):
         if self.state == self.goal_state:
@@ -92,23 +74,68 @@ class GridWorld:
             return False
 
     def move(self):
-        action = self.choosing_an_action()
-        if action == 'up':
+        action = self.pick_action()
+        next_state = self.get_next_state(action)
+
+        if next_state in self.wall:
+            self.reward -= 10
+        elif next_state in self.ice:
+            self.reward -= 5
+            self.state = next_state
+        elif next_state == self.goal_state:
+            self.reward += 100
+            self.state = next_state
+        else:
+            self.reward -= 1
+            self.state = next_state
+
+    def get_next_state(self, action):
+        if action == Actions.UP:
             return self.up()
-        elif action == 'down':
+        elif action == Actions.DOWN:
             return self.down()
-        elif action == 'left':
+        elif action == Actions.LEFT:
             return self.left()
-        elif action == 'right':
+        elif action == Actions.RIGHT:
             return self.right()
+
+    def update_policy(self):
+        distances = self.calculate_manhattan_distances_for_next_states()
+        self.policy = self.map_distances_to_probabilities(distances)
+
+    def calculate_manhattan_distances_for_next_states(self):
+        next_states = [self.get_next_state(action) for action in self.actions]
+        return [self.manhattan_distance(next_state) for next_state in next_states]
+
+    def manhattan_distance(self, state):
+        return abs(state[0] - self.goal_state[0]) + abs(state[1] - self.goal_state[1])
+
+    def map_distances_to_probabilities(self, distances):
+        distances = np.array(distances)
+        probabilities = np.zeros_like(distances)
+
+        # If there is a winning state, set its probability to 1 (there should be only one such state)
+        if (distances == 0).any():
+            probabilities[distances == 0] = 1
+            return probabilities
+
+        # Convert to inverse distances (since we want closer ones to have higher probability)
+        distances = 1 / distances
+
+        # Normalize inverse distances so they sum up to 1
+        probabilities = distances / np.sum(distances)
+
+        return probabilities
 
     def evaluate(self):
         while not self.is_final_state():
-            self.state = self.move()
+            print(f'Current state: {self.state}')
+            print(f'Current policy: {self.policy}')
+            print(f'Current reward: {self.reward}')
+            self.move()
+            self.update_policy()
 
         print(self.reward)
 
 
-
 gridWorld = GridWorld(5, 5)
-
