@@ -10,17 +10,30 @@ class Actions(Enum):
 
 
 class GridWorld:
-    def __init__(self, cols, rows):
+    def __init__(self, cols, rows, start_state=(0, 0)):
         self.cols = cols
         self.rows = rows
         self.actions = list(Actions)
-        self.state = (0, 0)
+        self.state = start_state
         self.goal_state = (self.rows - 1, self.cols - 1)
         self.reward = 0
         self.wall = self.create_random_wall(1)
         self.ice = self.create_random_ice(1)
         self.policy = [0.25, 0.25, 0.25, 0.25]
-        self.evaluate()
+    
+    def reset(self, cols, rows, start_state=(0,0)):
+        self.cols = cols
+        self.rows = rows
+        self.actions = list(Actions)
+        self.state = start_state
+        self.goal_state = (self.rows - 1, self.cols - 1)
+        self.reward = 0
+        self.wall = self.create_random_wall(1)
+        self.ice = self.create_random_ice(1)
+        self.policy = [0.25, 0.25, 0.25, 0.25]
+
+    def run(self):
+        return self.evaluate()
 
     def create_random_wall(self, length):
         wall = []
@@ -129,13 +142,25 @@ class GridWorld:
 
     def evaluate(self):
         while not self.is_final_state():
-            print(f'Current state: {self.state}')
-            print(f'Current policy: {self.policy}')
-            print(f'Current reward: {self.reward}')
+            #print(f'Current state: {self.state}')
+            #print(f'Current policy: {self.policy}')
+            #print(f'Current reward: {self.reward}')
             self.move()
             self.update_policy()
 
-        print(self.reward)
+        #print(self.reward)
+        return self.reward
 
-
-gridWorld = GridWorld(5, 5)
+cols = 5
+rows = 5
+state_value_est = [[0 for x in range(cols)] for x in range(rows)]
+Gridworld = GridWorld(cols, rows, (0,0))
+for i in range(cols):
+    for j in range(rows):
+        Gt = np.zeros(1000)
+        for t in range(1000):
+            Gt[t] = Gridworld.run()
+            Gridworld.reset(cols, rows, (i,j))
+        summed_Gt = np.sum(Gt)
+        state_value_est[j][i] = (1/1000 * summed_Gt)
+print(state_value_est)
