@@ -72,9 +72,12 @@ as `p(s', r|s, a)`.
 
 Are the environment dynamics generally known and can practically be used to solve a problem with RL?
 
-Knowing the environment dynamics depends on the problem. For example, in chess, we know the rules of the game and
-can calculate the environment dynamics. It is easy since it is deterministic. For the LunarLander, the state space is
-continuous, so it is not easy to calculate the environment dynamics like in chess, but it is still possible since it
-depends on a physics engine.
+Knowing the environment dynamics depends on the problem. For example, in something simple like a deterministic grid
+world, we can easily calculate the next states based on the given states and actions. For the LunarLander, the state
+space is continuous, so it is not easy to calculate the environment dynamics like in grid world, but it is still
+possible since it depends on a physics engine. For chess, the state space is discrete and chess rules are deterministic,
+however environment dynamics depends on the actions of both players, and it's not easy to predict the opponent's moves.
+We may try to estimate it, but it may not always be useful.
 
-For more complicated problems, we may not know the environment dynamics so we cannot rely on them to improve the policy.
+For more complicated problems, we may not know the environment dynamics at all, so we cannot rely on them to improve the
+policy. Then we probably want to use model-free algorithms.
