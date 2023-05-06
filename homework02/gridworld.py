@@ -50,9 +50,6 @@ class Q_Table():
 
 class Returns():
     def __init__(self, cols, rows, actions):
-        self.cols = cols
-        self.rows = rows
-        self.actions = actions
         self.returns = [
             [[[] for _ in range(len(actions))] for _ in range(cols)] for _ in range(rows)]
 
@@ -60,11 +57,8 @@ class Returns():
         self.returns[state[0]][state[1]][action.value].append(g)
 
     def average(self, state, action):
-        num_returns = len(self.returns[state[0]][state[1]][action.value])
-        if num_returns > 0:
-            return sum(self.returns[state[0]][state[1]][action.value]) / num_returns
-        else:
-            return 0
+        action_returns = self.returns[state[0]][state[1]][action.value]
+        return np.mean(action_returns) if action_returns else 0
 
 
 class GridWorld:
@@ -76,8 +70,10 @@ class GridWorld:
         self.actions = list(Actions)
         self.goal_state = (self.rows - 1, self.cols - 1)
         self.state = self.create_random_position(exclude=[self.goal_state])
-        self.walls = [self.create_random_position(exclude=[self.state, self.goal_state])]
-        self.ices = [self.create_random_position(exclude=[self.state, self.goal_state] + self.walls)]
+        self.walls = [self.create_random_position(
+            exclude=[self.state, self.goal_state])]
+        self.ices = [self.create_random_position(
+            exclude=[self.state, self.goal_state] + self.walls)]
         self.episode_reward = 0
         self.memory = Memory()
         self.q_table = Q_Table(self.cols, self.rows, self.actions)
@@ -87,7 +83,8 @@ class GridWorld:
         self.verbose = verbose
 
     def set_initial_state(self):
-        self.state = self.create_random_position(exclude=[self.goal_state] + self.walls + self.ices)
+        self.state = self.create_random_position(
+            exclude=[self.goal_state] + self.walls + self.ices)
         self.episode_reward = 0
 
     def create_random_position(self, exclude=None):
@@ -95,7 +92,8 @@ class GridWorld:
             exclude = []
 
         while True:
-            x, y = np.random.randint(0, self.cols), np.random.randint(0, self.rows)
+            x, y = np.random.randint(
+                0, self.cols), np.random.randint(0, self.rows)
             pos = (x, y)
             if pos not in exclude:
                 return pos
@@ -195,16 +193,19 @@ class GridWorld:
 
 def plot_average_return_per_episode(episode_reward_history):
     episodes = len(episode_reward_history)
-    average_return_per_episode = [np.mean(episode_reward_history[:i+1]) for i in range(episodes)]
+    average_return_per_episode = [
+        np.mean(episode_reward_history[:i+1]) for i in range(episodes)]
     plt.plot(range(1, episodes+1), average_return_per_episode)
     plt.xlabel('Episodes')
     plt.ylabel('Average Return per Episode')
     plt.title('Average Return per Episode vs Episodes')
     plt.show()
 
+
 def plot_average_return_per_wallclock_time(total_rewards_history, episode_durations):
     episodes = len(total_rewards_history)
-    average_return_per_episode = [np.mean(total_rewards_history[:i+1]) for i in range(episodes)]
+    average_return_per_episode = [
+        np.mean(total_rewards_history[:i+1]) for i in range(episodes)]
     wall_clock_time = np.cumsum(episode_durations)
     plt.plot(wall_clock_time, average_return_per_episode)
     plt.xlabel('Wall-clock Time (seconds)')
@@ -217,4 +218,5 @@ num_episodes = 1000
 gridworld = GridWorld(verbose=False)
 gridworld.train(num_episodes)
 plot_average_return_per_episode(gridworld.episode_reward_history)
-plot_average_return_per_wallclock_time(gridworld.episode_reward_history, gridworld.episode_durations)
+plot_average_return_per_wallclock_time(
+    gridworld.episode_reward_history, gridworld.episode_durations)
