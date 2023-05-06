@@ -39,9 +39,6 @@ class Q_Table():
     def set(self, state, action, value):
         self.q[state[0], state[1], action.value] = value
 
-    def get_max(self, state):
-        return np.max(self.q[state[0], state[1]])
-
     def get_max_action(self, state):
         # Get the indices of the max values
         max_indices = np.where(np.array(self.q[state[0], state[1]]) == np.max(
@@ -49,9 +46,6 @@ class Q_Table():
         # Randomly pick one of the max indices
         random_max_index = np.random.choice(max_indices)
         return random_max_index
-
-    def get_max_action_value(self, state):
-        return np.max(self.q[state[0], state[1]])
 
 
 class Returns():
