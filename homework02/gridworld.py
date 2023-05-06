@@ -74,46 +74,37 @@ class Returns():
 
 
 class GridWorld:
-    def __init__(self, cols=4, rows=4, epsilon=0.2, gamma=0.9):
+    def __init__(self, cols=4, rows=4, epsilon=0.2, gamma=0.9, verbose=False):
         self.cols = cols
         self.rows = rows
         self.epsilon = epsilon
         self.gamma = gamma
-        self.goal_state = (self.rows - 1, self.cols - 1)
         self.actions = list(Actions)
-        self.wall = self.create_random_wall(1)
-        self.ice = self.create_random_ice(1)
-        self.set_initial_state()
+        self.goal_state = (self.rows - 1, self.cols - 1)
+        self.state = self.create_random_position(exclude=[self.goal_state])
+        self.walls = [self.create_random_position(exclude=[self.state, self.goal_state])]
+        self.ices = [self.create_random_position(exclude=[self.state, self.goal_state] + self.walls)]
+        self.episode_reward = 0
         self.memory = Memory()
         self.q_table = Q_Table(self.cols, self.rows, self.actions)
         self.returns = Returns(self.cols, self.rows, self.actions)
         self.episode_reward_history = []
         self.episode_durations = []
+        self.verbose = verbose
 
     def set_initial_state(self):
-        self.state = self.get_random_start_state()
+        self.state = self.create_random_position(exclude=[self.goal_state] + self.walls + self.ices)
         self.episode_reward = 0
 
-    def get_random_start_state(self):
-        return np.random.randint(0, self.rows), np.random.randint(0, self.cols)
+    def create_random_position(self, exclude=None):
+        if exclude is None:
+            exclude = []
 
-    def create_random_wall(self, length):
-        wall = []
-        while len(wall) < length:
-            x = np.random.randint(0, self.cols)
-            y = np.random.randint(0, self.rows)
-            if (x, y) == self.goal_state:
-                continue
-            wall.append((x, y))
-        return wall
-
-    def create_random_ice(self, length):
-        ice = []
-        for _ in range(length):
-            x = np.random.randint(0, self.cols)
-            y = np.random.randint(0, self.rows)
-            ice.append((x, y))
-        return ice
+        while True:
+            x, y = np.random.randint(0, self.cols), np.random.randint(0, self.rows)
+            pos = (x, y)
+            if pos not in exclude:
+                return pos
 
     def pick_action(self):
         if np.random.uniform(0, 1) < self.epsilon:
@@ -136,20 +127,28 @@ class GridWorld:
     def is_final_state(self):
         return self.state == self.goal_state
 
-    def move(self, verbose=False):
+    def move(self):
         action = self.pick_action()
-        next_state = self.get_next_state(action)
 
-        if next_state in self.wall:
+        if action == Actions.UP:
+            next_state = self.up()
+        elif action == Actions.DOWN:
+            next_state = self.down()
+        elif action == Actions.LEFT:
+            next_state = self.left()
+        elif action == Actions.RIGHT:
+            next_state = self.right()
+
+        if next_state in self.walls:
             reward = -10
-        elif next_state in self.ice:
+        elif next_state in self.ices:
             reward = -5
         elif next_state == self.goal_state:
             reward = 100
         else:
             reward = -1
 
-        if verbose:
+        if self.verbose:
             print(f'Current state: {self.state}')
             print(f'Episode reward so far: {self.episode_reward}')
             print(f'Action: {action}')
@@ -159,16 +158,6 @@ class GridWorld:
         self.episode_reward += reward
         self.memory.add(self.state, action, reward)
         self.state = next_state
-
-    def get_next_state(self, action):
-        if action == Actions.UP:
-            return self.up()
-        elif action == Actions.DOWN:
-            return self.down()
-        elif action == Actions.LEFT:
-            return self.left()
-        elif action == Actions.RIGHT:
-            return self.right()
 
     def rollout(self):
         self.set_initial_state()
@@ -195,9 +184,9 @@ class GridWorld:
                     avg_return = self.returns.average(state, action)
                     self.q_table.set(state, action, avg_return)
 
-    def train(self, episodes, verbose=False):
+    def train(self, episodes):
         for episode in range(episodes):
-            if verbose:
+            if self.verbose:
                 print(f'Episode {episode + 1}')
             start_time = time.time()
             self.rollout()
@@ -230,8 +219,8 @@ def plot_average_return_per_wallclock_time(total_rewards_history, episode_durati
     plt.show()
 
 
-num_episodes = 100
-gridworld = GridWorld()
-gridworld.train(num_episodes, verbose=False)
+num_episodes = 1000
+gridworld = GridWorld(verbose=False)
+gridworld.train(num_episodes)
 plot_average_return_per_episode(gridworld.episode_reward_history)
 plot_average_return_per_wallclock_time(gridworld.episode_reward_history, gridworld.episode_durations)
