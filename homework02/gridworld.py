@@ -159,8 +159,8 @@ class GridWorld:
     def calculate_returns(self):
         g = 0
         processed_pairs = set()
-        for i in range(len(self.memory.store)):
-            step, action, reward = self.memory.store[i]
+        for mem in reversed(self.memory.store):
+            step, action, reward = mem
             g = self.gamma * g + reward
             pair = (step, action)
 
