@@ -62,7 +62,7 @@ class Returns():
 
 
 class GridWorld:
-    def __init__(self, cols=4, rows=4, alpha=0.1, epsilon=0.2, gamma=0.9, verbose=False, starting_state=None):
+    def __init__(self, cols=4, rows=4, alpha=0.5, epsilon=0.2, gamma=0.9, verbose=False, starting_state=None):
         self.cols = cols
         self.rows = rows
         self.alpha = alpha
@@ -105,13 +105,10 @@ class GridWorld:
             if pos not in exclude:
                 return pos
 
-    def pick_action(self):
+    def pick_action(self, state):
         if np.random.uniform(0, 1) < self.epsilon:
             return np.random.choice(list(Actions))
 
-        return Actions(self.q_table.get_max_action(self.state))
-
-    def pick_best_action(self, state):
         return Actions(self.q_table.get_max_action(state))
 
     def up(self):
@@ -130,7 +127,7 @@ class GridWorld:
         return self.state == self.goal_state
 
     def move(self, method='sarsa'):
-        action = self.pick_action()
+        action = self.pick_action(self.state)
 
         if action == Actions.UP:
             next_state = self.up()
@@ -182,7 +179,7 @@ class GridWorld:
 
     def update_q_value(self, state, action, next_state, reward):
         q = self.q_table.get(state, action)
-        next_action = self.pick_best_action(next_state)
+        next_action = self.pick_action(next_state)
         q_prime = self.q_table.get(next_state, next_action)
         new_q_val = q + self.alpha * (reward + self.gamma * q_prime - q)
         self.q_table.set(state, action, new_q_val)
