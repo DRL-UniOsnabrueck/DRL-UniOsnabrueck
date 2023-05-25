@@ -81,7 +81,6 @@ class GridWorld:
 
     def reset(self):
         self.episode_reward = 0
-        self.memory = Memory()
         self.q_table = Q_Table(self.cols, self.rows, self.actions)
         self.returns = Returns(self.cols, self.rows, self.actions)
         self.episode_reward_history = []
@@ -155,7 +154,8 @@ class GridWorld:
             print(f'Reward: {reward}\n')
 
         self.episode_reward += reward
-        self.memory.add(self.state, action, reward)
+        if method == 'mc':
+            self.memory.add(self.state, action, reward)
         if method == 'sarsa':
             self.update_q_value(self.state, action, next_state, reward)
         self.state = next_state
@@ -193,16 +193,19 @@ class GridWorld:
                     self.q_table.set(state, action, avg_return)
 
     def train(self, episodes, method='sarsa'):
+        if method == 'mc':
+            self.memory = Memory()
+
         for episode in range(episodes):
             if self.verbose:
                 print(f'Episode {episode + 1}')
             start_time = time.time()
             self.rollout(method)
             self.episode_reward_history.append(self.episode_reward)
-            self.calculate_returns()
             if method == 'mc':
+                self.calculate_returns()
                 self.update_q_table()
-            self.memory.reset()
+                self.memory.reset()
             end_time = time.time()
             duration = end_time - start_time
             self.episode_durations.append(duration)
