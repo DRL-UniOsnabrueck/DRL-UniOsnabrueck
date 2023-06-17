@@ -150,7 +150,7 @@ def test_q_network(test_dqn_network, environment_name: str, num_parallel_tests: 
     returns = np.zeros(num_parallel_tests)
 
     while not done:
-        q_values = test_dqn_network(states)
+        q_values = test_dqn_network(observation_preprocessing_function(states))
         actions = tf.argmax(q_values, axis=1)
         states, rewards, terminateds, _, _ = envs.step(actions)
         episodes_finished = np.logical_or(episodes_finished, terminateds)
